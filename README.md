@@ -9,6 +9,7 @@ TaskBoard is a realistic, SaaS-style project management application engineered a
 - **Day 1: Application Foundation (Completed)**: Core FastAPI backend, PostgreSQL database, Alembic migrations, Pytest suite, and React + Vite frontend.
 - **Day 2: Complete Dockerization (Completed)**: Full multi-container architecture using Docker Compose. Frontend (Nginx reverse proxy + React SPA), Backend (FastAPI non-root container with auto-migrations), and PostgreSQL (persistent Alpine container) connected via a dedicated bridge network.
 - **Day 3: CI/CD, Trivy Security & GHCR (Completed)**: Automated GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) with PostgreSQL service container testing, Vite production build, Trivy container vulnerability scanning (HIGH/CRITICAL blocking policy), and automated image publishing to GitHub Container Registry (GHCR). Detailed guide: [docs/DAY3-CICD.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY3-CICD.md).
+- **Day 4: Kubernetes, Helm & Local Deployment (Completed)**: Full Kubernetes orchestration with 11 native manifests in `k8s/` and a modular Helm chart in `helm/taskboard/`. Features PostgreSQL StatefulSet with persistent storage, backend deployment with startup ordering initContainer, non-root security contexts, frontend Nginx proxy integration, and zero-error Helm linting/templating. Detailed guide: [docs/DAY4-KUBERNETES-HELM.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY4-KUBERNETES-HELM.md).
 
 ---
 
@@ -20,9 +21,10 @@ TaskBoard is a realistic, SaaS-style project management application engineered a
 | **Backend** | Python 3.13 Slim, FastAPI, Uvicorn, Pydantic v2, Prometheus Instrumentator |
 | **Database** | PostgreSQL 16 Alpine, SQLAlchemy 2.0, Alembic, psycopg 3 |
 | **Containerization** | Docker, Docker Compose, Multi-stage Dockerfiles, Bridge Networks |
+| **Orchestration** | Kubernetes (StatefulSets, Deployments, Services, ConfigMaps, Secrets, Ingress), Helm v3/v4 |
 | **Testing** | Pytest, FastAPI TestClient, HTTPX |
 | **CI/CD & Security** | GitHub Actions, Aqua Security Trivy, GitHub Container Registry (GHCR) |
-| **Cloud & Infra** | *(Future: Terraform, AWS VPC, AWS EKS, Helm, Kubernetes Ingress, Grafana)* |
+| **Cloud & Infra** | *(Preserved for AWS phase: Terraform, AWS VPC, AWS EKS, Grafana)* |
 
 ---
 
@@ -46,9 +48,9 @@ devops_project/
 │   ├── .dockerignore             # Excludes .venv, caches, tests, and env files
 │   ├── alembic.ini               # Alembic configuration
 │   └── requirements.txt          # Python dependencies
-├── terraform/                    # (Day 4) AWS infrastructure as code
-├── helm/taskboard/               # (Day 5) Helm charts for Kubernetes deployment
-├── k8s/                          # (Day 5) Kubernetes manifests
+├── terraform/                    # AWS infrastructure as code (pending AWS account setup)
+├── helm/taskboard/               # (Day 4) Helm charts for Kubernetes deployment
+├── k8s/                          # (Day 4) Kubernetes manifests
 ├── monitoring/                   # (Day 6) Prometheus & Grafana alerting & dashboards
 ├── troubleshooting/              # (Day 6) Debugging runbooks and incident scenarios
 ├── scripts/                      # Automation & setup scripts
@@ -152,6 +154,73 @@ docker compose down
 ### Restart Services (Data Persistence)
 ```powershell
 docker compose restart
+```
+
+---
+
+## ☸️ Running with Kubernetes & Helm
+
+TaskBoard supports deployment onto local Kubernetes clusters (Minikube or Docker Desktop Kubernetes) using raw manifests (`k8s/`) or the Helm chart (`helm/taskboard`).
+
+Detailed architecture, security practices, and troubleshooting runbooks are available in [docs/DAY4-KUBERNETES-HELM.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY4-KUBERNETES-HELM.md).
+
+### 1. Deploying via Helm (Recommended)
+
+```powershell
+# 1. Create dedicated namespace and dynamically generate the Secret (URL-safe)
+kubectl create namespace taskboard
+
+$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+$bytes = New-Object byte[] 24
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$dbPassword = (-join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] }))
+$databaseUrl = "postgresql+psycopg://taskboard:$([System.Uri]::EscapeDataString($dbPassword))@postgres:5432/taskboard"
+
+kubectl create secret generic taskboard-secrets -n taskboard `
+  --from-literal=POSTGRES_PASSWORD="$dbPassword" `
+  --from-literal=DATABASE_URL="$databaseUrl"
+
+# Verify Secret exists without exposing credentials
+kubectl get secret taskboard-secrets -n taskboard
+
+# 2. Deploy or upgrade the Helm release referencing the Secret
+helm upgrade --install taskboard helm/taskboard `
+  --namespace taskboard `
+  --set postgresql.auth.existingSecret=taskboard-secrets
+
+# 3. Check Pod rollout status
+kubectl get pods -n taskboard -w
+
+# 4. Access the application via port-forward
+kubectl port-forward svc/frontend 3000:80 -n taskboard
+```
+
+### 2. Deploying via Raw Kubernetes Manifests
+
+```powershell
+# 1. Create namespace
+kubectl apply -f k8s/00-namespace.yaml
+
+# 2. Create the Secret dynamically (k8s/02-secret.yaml is a template; do NOT apply it directly)
+$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+$bytes = New-Object byte[] 24
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$dbPassword = (-join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] }))
+$databaseUrl = "postgresql+psycopg://taskboard:$([System.Uri]::EscapeDataString($dbPassword))@postgres:5432/taskboard"
+
+kubectl create secret generic taskboard-secrets -n taskboard `
+  --from-literal=POSTGRES_PASSWORD="$dbPassword" `
+  --from-literal=DATABASE_URL="$databaseUrl"
+
+# 3. Apply configurations, persistent volume, and workloads
+kubectl apply -f k8s/01-configmap.yaml
+kubectl apply -f k8s/03-postgres-pvc.yaml
+kubectl apply -f k8s/04-postgres-statefulset.yaml
+kubectl apply -f k8s/05-postgres-service.yaml
+kubectl apply -f k8s/06-backend-deployment.yaml
+kubectl apply -f k8s/07-backend-service.yaml
+kubectl apply -f k8s/08-frontend-deployment.yaml
+kubectl apply -f k8s/09-frontend-service.yaml
 ```
 
 ---

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: taskboard
+description: A Helm chart for deploying the TaskBoard DevOps Capstone application on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+icon: https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo.png
+keywords:
+  - taskboard
+  - devops
+  - capstone
+  - fastapi
+  - react
+  - postgresql
+home: https://github.com/shivansh023023/taskboard-devops-capstone
+sources:
+  - https://github.com/shivansh023023/taskboard-devops-capstone
+maintainers:
+  - name: Shivansh

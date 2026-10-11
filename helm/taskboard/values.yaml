@@ -1,0 +1,154 @@
+# ==============================================================================
+# TaskBoard Helm Chart — Default Values
+# ==============================================================================
+
+global:
+  environment: "development"
+
+# ------------------------------------------------------------------------------
+# Backend Service Configuration (FastAPI)
+# ------------------------------------------------------------------------------
+backend:
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/shivansh023023/taskboard-devops-capstone-backend
+    # Default to 'main' for rolling tracking; override with commit SHA for immutable releases:
+    # --set backend.image.tag=f444898ae2c35c922bc0abedbe14360d97af9652
+    tag: main
+    pullPolicy: IfNotPresent
+
+  service:
+    # Must be 'backend' to match Nginx proxy_pass http://backend:8000
+    name: backend
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readiness:
+      path: /ready
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+# ------------------------------------------------------------------------------
+# Frontend Web Application Configuration (React + Nginx)
+# ------------------------------------------------------------------------------
+frontend:
+  replicaCount: 1
+
+  image:
+    repository: ghcr.io/shivansh023023/taskboard-devops-capstone-frontend
+    # Default to 'main'; override with commit SHA for immutable releases:
+    # --set frontend.image.tag=f444898ae2c35c922bc0abedbe14360d97af9652
+    tag: main
+    pullPolicy: IfNotPresent
+
+  service:
+    name: frontend
+    type: ClusterIP
+    port: 80
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  probes:
+    liveness:
+      path: /nginx-health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readiness:
+      path: /nginx-health
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+# ------------------------------------------------------------------------------
+# PostgreSQL Database Configuration (Local StatefulSet)
+# ------------------------------------------------------------------------------
+postgresql:
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+
+  service:
+    name: postgres
+    port: 5432
+
+  auth:
+    database: taskboard
+    username: taskboard
+    # SECURITY NOTICE:
+    # A database password or pre-created Secret is MANDATORY.
+    # Provide a password via CLI (--set postgresql.auth.password=<password>)
+    # or reference an existing Kubernetes Secret (--set postgresql.auth.existingSecret=<secret-name>).
+    # If both are empty, Helm rendering will fail with an error. No default password is substituted.
+    password: ""
+    existingSecret: ""
+
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ------------------------------------------------------------------------------
+# Ingress Controller Configuration
+# ------------------------------------------------------------------------------
+ingress:
+  # Ingress is disabled by default for local clusters without an Ingress controller.
+  # Enable with: --set ingress.enabled=true
+  enabled: false
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+  host: taskboard.local
+  path: /
+  pathType: Prefix
+
+# ------------------------------------------------------------------------------
+# Application Core Configuration (ConfigMap settings)
+# ------------------------------------------------------------------------------
+config:
+  debug: "False"
+  projectName: "TaskBoard"
+  apiV1Str: "/api"
+  corsOrigins: '["http://localhost:3000","http://127.0.0.1:3000","http://localhost:80","http://localhost","http://taskboard.local"]'

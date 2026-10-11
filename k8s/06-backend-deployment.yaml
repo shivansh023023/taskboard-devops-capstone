@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: taskboard
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: api
+    app.kubernetes.io/part-of: taskboard-capstone
+spec:
+  # Single replica is used to ensure Alembic migrations in entrypoint.sh run sequentially
+  # without migration race conditions. For multi-replica production scaling, decouple migrations
+  # into a pre-deployment Kubernetes Job.
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+      app.kubernetes.io/component: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: taskboard-capstone
+    spec:
+      # Security: Enforce non-root execution matching Dockerfile appuser (UID/GID 1000)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      # Startup ordering: Wait until PostgreSQL service is reachable and ready
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              echo "[init] Checking connectivity to PostgreSQL service at postgres:5432..."
+              until pg_isready -h postgres -p 5432 -U taskboard -d taskboard; do
+                echo "[init] Waiting for postgres to become ready..."
+                sleep 2
+              done
+              echo "[init] PostgreSQL is ready and accepting connections."
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+
+      containers:
+        - name: backend
+          # Release-pinned immutable tag: ghcr.io/shivansh023023/taskboard-devops-capstone-backend:f444898ae2c35c922bc0abedbe14360d97af9652
+          image: ghcr.io/shivansh023023/taskboard-devops-capstone-backend:main
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: taskboard-config
+          env:
+            # Sensitive database connection string pointing to internal k8s service
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: taskboard-secrets
+                  key: DATABASE_URL
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

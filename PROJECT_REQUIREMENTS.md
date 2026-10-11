@@ -23,12 +23,12 @@ Rules: A requirement is marked `DONE` only after concrete verification.
 | GitHub Actions CI/CD | CI/CD | Day 3 | DONE | Multi-job workflow (`.github/workflows/ci-cd.yml`) with automated tests and builds |
 | Trivy container security scanning | Security | Day 3 | DONE | Trivy scanning integrated with HIGH/CRITICAL blocking exit policy |
 | GitHub Container Registry (GHCR) | Container Registry | Day 3 | DONE | Automated multi-tag publishing (`:${{ github.sha }}`, `:latest`, `:main`) to GHCR |
-| Terraform for AWS infrastructure | Infrastructure | Day 4 | NOT_STARTED | Planned for Day 4 |
-| AWS VPC, EKS & managed worker nodes | Cloud/K8s | Day 4 | NOT_STARTED | Planned for Day 4 |
-| Kubernetes Manifests | Orchestration | Day 5 | NOT_STARTED | Planned for Day 5 |
-| Helm Chart (`helm/taskboard`) | Orchestration | Day 5 | NOT_STARTED | Planned for Day 5 |
-| Ingress Controller | Networking | Day 5 | NOT_STARTED | Planned for Day 5 |
-| Horizontal Pod Autoscaler (HPA) | Scaling | Day 5 | NOT_STARTED | Planned for Day 5 |
+| Terraform for AWS infrastructure | Infrastructure | Deferred | NOT_STARTED | Preserved for cloud stage (pending AWS account setup) |
+| AWS VPC, EKS & managed worker nodes | Cloud/K8s | Deferred | NOT_STARTED | Preserved for cloud stage (pending AWS account setup) |
+| Kubernetes Manifests (`k8s/`) | Orchestration | Day 4 | DONE | 11 YAML manifests created, validated with PyYAML |
+| Helm Chart (`helm/taskboard`) | Orchestration | Day 4 | DONE | Complete modular chart created; passed `helm lint` (0 errors) & `helm template` |
+| Ingress Controller | Networking | Day 4 | IN_PROGRESS | Manifest and Helm template implemented; requires active cluster ingress controller |
+| Horizontal Pod Autoscaler (HPA) | Scaling | Day 5 | NOT_STARTED | Planned for Day 5 scaling and resilience |
 | Prometheus and Grafana | Observability | Day 6 | NOT_STARTED | `/metrics` endpoint instrumented Day 1; monitoring stack Day 6 |
 | Health and readiness endpoints | Observability | Day 1 | DONE | `/health` (liveness), `/ready` (DB readiness probe), `/metrics` verified |
 | Load testing & troubleshooting | Reliability | Day 6 | NOT_STARTED | Planned for Day 6 |
@@ -101,3 +101,28 @@ Rules: A requirement is marked `DONE` only after concrete verification.
 | 13 | Step summary report generated | DONE | Job `pipeline-summary` outputs rich Markdown table to `$GITHUB_STEP_SUMMARY` |
 | 14 | Comprehensive documentation created | DONE | Detailed [docs/DAY3-CICD.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY3-CICD.md) and updated README created |
 | 15 | Ready for Day 4 AWS & Terraform infrastructure | DONE | Verified container images in GHCR will serve as deployment targets for Kubernetes |
+
+---
+
+## 5. Day 4: Kubernetes, Helm & Local Deployment — Acceptance Checklist
+
+| # | Acceptance Criterion | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| 1 | Raw Kubernetes manifests created in `k8s/` | DONE | 11 manifests covering Namespace, ConfigMap, Secret, PVC, StatefulSet, Deployments, Services, Ingress |
+| 2 | PostgreSQL StatefulSet with persistent storage | DONE | `k8s/04-postgres-statefulset.yaml` with 1Gi PVC, `pg_isready` probes, resource requests/limits |
+| 3 | Backend deployment uses published GHCR image | DONE | Configured `ghcr.io/shivansh023023/...-backend:main`, with documented commit-specific tag |
+| 4 | Startup ordering handles PostgreSQL readiness | DONE | `wait-for-postgres` initContainer checks `postgres:5432` connectivity before starting app |
+| 5 | Non-root security context preserved | DONE | Backend enforces `runAsNonRoot: true`, `runAsUser: 1000`, `runAsGroup: 1000` |
+| 6 | Frontend deployment uses published GHCR image | DONE | Configured `ghcr.io/shivansh023023/...-frontend:main`, probes `/nginx-health` on port 80 |
+| 7 | Frontend proxies to backend via k8s Service | DONE | Backend service named `backend` (matching Nginx `proxy_pass http://backend:8000`) |
+| 8 | ConfigMap and Secret cleanly separate sensitive data | DONE | Non-sensitive configs in ConfigMap; Secret manifest converted to placeholder template with dynamic CLI docs |
+| 9 | Ingress manifest created and documented | DONE | Ingress rule routes `taskboard.local` to `frontend:80`; database strictly excluded |
+| 10 | Complete Helm chart created in `helm/taskboard` | DONE | Modular chart with `Chart.yaml`, `values.yaml`, `_helpers.tpl`, templates, and `NOTES.txt` |
+| 11 | Helm values parameterize images, resources, and probes | DONE | `.Values` overrides for backend, frontend, postgres, persistence, and ingress |
+| 12 | Ingress configurable and disabled by default | DONE | `ingress.enabled: false` by default for local clusters without ingress controller |
+| 13 | Helm chart passes linting | DONE | `helm lint helm/taskboard` exited with code 0 (0 chart(s) failed, 0 warnings) |
+| 14 | Helm chart templates render valid Kubernetes YAML | DONE | Enforces mandatory credentials (fails safely if missing); parses cleanly when provided via `--set` or `existingSecret` |
+| 15 | Manifests validated with YAML parser | DONE | Python PyYAML successfully validated all 11 files in `k8s/` |
+| 16 | Local cluster status honestly reported | DONE | Reported offline Docker Desktop / Minikube daemon blocker; smallest setup path documented |
+| 17 | Comprehensive documentation created | DONE | Detailed [docs/DAY4-KUBERNETES-HELM.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY4-KUBERNETES-HELM.md) and updated README created |
+| 18 | Terraform/AWS boundary preserved | DONE | AWS/EKS requirements preserved for cloud phase; no mock infrastructure created |

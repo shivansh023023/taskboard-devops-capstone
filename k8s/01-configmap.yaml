@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskboard-config
+  namespace: taskboard
+  labels:
+    app.kubernetes.io/name: taskboard
+    app.kubernetes.io/component: config
+    app.kubernetes.io/part-of: taskboard-capstone
+data:
+  # Application Environment Configuration
+  ENVIRONMENT: "production"
+  DEBUG: "False"
+  PROJECT_NAME: "TaskBoard"
+  API_V1_STR: "/api"
+  
+  # CORS Origins permitted to call the backend APIs directly
+  BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000","http://localhost:80","http://localhost","http://taskboard.local"]'
+
+  # PostgreSQL Configuration (non-sensitive parameters)
+  POSTGRES_DB: "taskboard"
+  POSTGRES_USER: "taskboard"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
