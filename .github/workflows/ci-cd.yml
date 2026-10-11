@@ -134,7 +134,7 @@ jobs:
 
       - name: Verify installed package versions in backend scan image
         run: |
-          docker run --rm taskboard-backend:ci-scan-${{ github.sha }} python -c "
+          docker run --rm --entrypoint python taskboard-backend:ci-scan-${{ github.sha }} -c "
           import sys
           import importlib.metadata
 
