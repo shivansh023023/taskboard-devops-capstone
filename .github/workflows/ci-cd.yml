@@ -133,7 +133,7 @@ jobs:
           tags: taskboard-frontend:ci-scan-${{ github.sha }}
 
       - name: Run Trivy vulnerability scan on backend image
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: taskboard-backend:ci-scan-${{ github.sha }}
           format: 'table'
@@ -143,7 +143,7 @@ jobs:
           severity: 'HIGH,CRITICAL'
 
       - name: Run Trivy vulnerability scan on frontend image
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: taskboard-frontend:ci-scan-${{ github.sha }}
           format: 'table'
