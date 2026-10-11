@@ -231,7 +231,7 @@ jobs:
           echo "frontend_image=${FRONTEND_IMAGE}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry (GHCR)
-        uses: docker/login-action@9780b0c442f84e1734f71a496b89be773377630c # v3.3.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
