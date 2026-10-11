@@ -19,10 +19,10 @@ Rules: A requirement is marked `DONE` only after concrete verification.
 | REST APIs | Backend | Day 1 | DONE | Tasks CRUD, stats, health, ready, metrics all responding with HTTP 200 |
 | Pytest automated tests | Testing | Day 1 | DONE | 16/16 automated test suite passing in 0.45s |
 | Docker and Docker Compose | DevOps | Day 1-2 | DONE | Full 3-container stack (`postgres`, `backend`, `frontend`) running via Compose on `taskboard_network` |
-| Git and GitHub | DevOps | Day 1-2 | DONE | Git repository initialized, checkpoints committed cleanly |
-| GitHub Actions CI/CD | CI/CD | Day 3 | NOT_STARTED | Planned for Day 3 |
-| Trivy container security scanning | Security | Day 3 | NOT_STARTED | Planned for Day 3 |
-| GitHub Container Registry (GHCR) | Container Registry | Day 3 | NOT_STARTED | Planned for Day 3 |
+| Git and GitHub | DevOps | Day 1-2 | DONE | Git repository initialized, pushed to GitHub `origin/main` |
+| GitHub Actions CI/CD | CI/CD | Day 3 | DONE | Multi-job workflow (`.github/workflows/ci-cd.yml`) with automated tests and builds |
+| Trivy container security scanning | Security | Day 3 | DONE | Trivy scanning integrated with HIGH/CRITICAL blocking exit policy |
+| GitHub Container Registry (GHCR) | Container Registry | Day 3 | DONE | Automated multi-tag publishing (`:${{ github.sha }}`, `:latest`, `:main`) to GHCR |
 | Terraform for AWS infrastructure | Infrastructure | Day 4 | NOT_STARTED | Planned for Day 4 |
 | AWS VPC, EKS & managed worker nodes | Cloud/K8s | Day 4 | NOT_STARTED | Planned for Day 4 |
 | Kubernetes Manifests | Orchestration | Day 5 | NOT_STARTED | Planned for Day 5 |
@@ -79,3 +79,25 @@ Rules: A requirement is marked `DONE` only after concrete verification.
 | 16 | Existing backend tests still pass | DONE | 16/16 Pytest tests pass against database on host port 5433 |
 | 17 | Frontend production build succeeds | DONE | `npm run build` succeeds on host in 1.02s |
 | 18 | README and requirement tracking updated | DONE | Updated with full Day 2 Docker workflow, commands, and architecture |
+
+---
+
+## 4. Day 3: CI/CD, Trivy & GHCR — Acceptance Checklist
+
+| # | Acceptance Criterion | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| 1 | Workflow file exists and YAML is valid | DONE | `.github/workflows/ci-cd.yml` created; validated via Python PyYAML parser |
+| 2 | Automated tests run against real PostgreSQL in CI | DONE | Job `backend-tests` launches `postgres:16-alpine` service, runs Alembic & Pytest |
+| 3 | Frontend builds in CI | DONE | Job `frontend-build` executes clean `npm ci` and `npm run build` |
+| 4 | Actions pinned to immutable commit SHAs | DONE | Pinned SHAs used for checkout, python, node, buildx, login, build-push, and trivy |
+| 5 | Docker images build in CI | DONE | Job `docker-build-and-scan` builds backend and frontend images locally |
+| 6 | Trivy vulnerability scan runs on both images | DONE | Scans OS packages and application dependencies for CVEs |
+| 7 | Blocking policy for HIGH and CRITICAL vulnerabilities | DONE | Configured `exit-code: '1'` and `severity: 'HIGH,CRITICAL'` |
+| 8 | Images published to GHCR only on main push | DONE | Condition: `github.event_name == 'push' && github.ref == 'refs/heads/main'` |
+| 9 | PRs run validation and security without publishing | DONE | PRs trigger tests, build, and Trivy; `publish-ghcr` job skipped on PRs |
+| 10 | Dynamic lowercased repository naming for GHCR | DONE | `ghcr.io/<owner>/<repo>-backend` and `-frontend` formatted safely |
+| 11 | Multi-tag strategy (commit SHA, latest, main) | DONE | Images tagged with immutable SHA (`:${{ github.sha }}`), `:latest`, and `:main` |
+| 12 | Principle of least privilege enforced | DONE | Global `contents: read`; only `publish-ghcr` gets `packages: write` |
+| 13 | Step summary report generated | DONE | Job `pipeline-summary` outputs rich Markdown table to `$GITHUB_STEP_SUMMARY` |
+| 14 | Comprehensive documentation created | DONE | Detailed [docs/DAY3-CICD.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY3-CICD.md) and updated README created |
+| 15 | Ready for Day 4 AWS & Terraform infrastructure | DONE | Verified container images in GHCR will serve as deployment targets for Kubernetes |

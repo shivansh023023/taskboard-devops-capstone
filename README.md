@@ -8,6 +8,7 @@ TaskBoard is a realistic, SaaS-style project management application engineered a
 
 - **Day 1: Application Foundation (Completed)**: Core FastAPI backend, PostgreSQL database, Alembic migrations, Pytest suite, and React + Vite frontend.
 - **Day 2: Complete Dockerization (Completed)**: Full multi-container architecture using Docker Compose. Frontend (Nginx reverse proxy + React SPA), Backend (FastAPI non-root container with auto-migrations), and PostgreSQL (persistent Alpine container) connected via a dedicated bridge network.
+- **Day 3: CI/CD, Trivy Security & GHCR (Completed)**: Automated GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) with PostgreSQL service container testing, Vite production build, Trivy container vulnerability scanning (HIGH/CRITICAL blocking policy), and automated image publishing to GitHub Container Registry (GHCR). Detailed guide: [docs/DAY3-CICD.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY3-CICD.md).
 
 ---
 
@@ -20,7 +21,8 @@ TaskBoard is a realistic, SaaS-style project management application engineered a
 | **Database** | PostgreSQL 16 Alpine, SQLAlchemy 2.0, Alembic, psycopg 3 |
 | **Containerization** | Docker, Docker Compose, Multi-stage Dockerfiles, Bridge Networks |
 | **Testing** | Pytest, FastAPI TestClient, HTTPX |
-| **DevOps & Cloud** | Git, Docker *(Future: GitHub Actions CI/CD, Trivy, GHCR, Terraform, AWS EKS, Helm, K8s, Grafana)* |
+| **CI/CD & Security** | GitHub Actions, Aqua Security Trivy, GitHub Container Registry (GHCR) |
+| **Cloud & Infra** | *(Future: Terraform, AWS VPC, AWS EKS, Helm, Kubernetes Ingress, Grafana)* |
 
 ---
 
@@ -185,6 +187,30 @@ npm run build
 | `Backend fails with connection refused` | Database container not yet ready. | The `docker-compose.yml` uses `depends_on: { postgres: { condition: service_healthy } }` to ensure PostgreSQL is ready before backend boots. |
 | `Migrations do not apply` | Database URL incorrect or schema out of sync. | Inspect logs with `docker compose logs backend`. The entrypoint script runs `alembic upgrade head` before Uvicorn starts. |
 | `Frontend returns 502 Bad Gateway` | Backend container is restarting or unhealthy. | Check `docker compose logs backend` to resolve backend crashes. |
+
+---
+
+## 🔄 Automated CI/CD Pipeline (GitHub Actions)
+
+TaskBoard includes a production-ready automated CI/CD pipeline defined in [.github/workflows/ci-cd.yml](file:///c:/Users/Shivansh/Desktop/devops_project/.github/workflows/ci-cd.yml):
+
+```mermaid
+flowchart TD
+    Push["Push / PR to main"] --> Test["Job A: Backend Tests\n(Pytest + PostgreSQL 16)"]
+    Push --> Build["Job B: Frontend Build\n(Node 22 + Vite)"]
+    Test --> Scan["Job C: Docker Build & Trivy Scan\n(HIGH/CRITICAL blocking)"]
+    Build --> Scan
+    Scan --> PushCheck{"Is push to main?"}
+    PushCheck -- Yes --> GHCR["Job D: Publish to GHCR\n(:sha, :latest, :main)"]
+    PushCheck -- No (PR) --> Summary["Job E: Pipeline Summary"]
+    GHCR --> Summary
+```
+
+- **Trigger**: Every push and pull request targeting `main`.
+- **Database in CI**: Spawns an isolated `postgres:16-alpine` service container and executes Alembic migrations prior to running Pytest.
+- **Trivy Vulnerability Scan**: Enforces a strict blocking policy on HIGH/CRITICAL CVEs for both backend and frontend images.
+- **GHCR Publishing**: Only pushes to `main` publish images to `ghcr.io/<owner>/<repo>-backend` and `-frontend`.
+- For full architecture details and manual GitHub configuration steps, see [docs/DAY3-CICD.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY3-CICD.md).
 
 ---
 
