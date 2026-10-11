@@ -132,6 +132,50 @@ jobs:
           load: true
           tags: taskboard-frontend:ci-scan-${{ github.sha }}
 
+      - name: Verify installed package versions in backend scan image
+        run: |
+          docker run --rm taskboard-backend:ci-scan-${{ github.sha }} python -c "
+          import sys
+          import importlib.metadata
+
+          try:
+              from packaging.version import Version
+              parse_v = Version
+          except ImportError:
+              import re
+              def parse_v(v):
+                  parts = [int(x) for x in re.findall(r'\d+', str(v))]
+                  while len(parts) < 3:
+                      parts.append(0)
+                  return tuple(parts[:3])
+
+          min_versions = {
+              'msgpack': '1.2.1',
+              'setuptools': '78.1.1',
+              'urllib3': '2.8.0',
+              'starlette': '0.40.0',
+          }
+
+          print('=== Diagnostics: Inspecting actual installed package versions in backend image ===')
+          failed = False
+          for pkg, min_ver in min_versions.items():
+              try:
+                  actual_ver = importlib.metadata.version(pkg)
+                  print(f'  {pkg}: {actual_ver} (required >= {min_ver})')
+                  if parse_v(actual_ver) < parse_v(min_ver):
+                      print(f'  [FAIL] {pkg} version {actual_ver} is below minimum required {min_ver}!')
+                      failed = True
+                  else:
+                      print(f'  [OK] {pkg} satisfies requirement.')
+              except importlib.metadata.PackageNotFoundError:
+                  print(f'  [FAIL] {pkg} is NOT installed in image!')
+                  failed = True
+
+          if failed:
+              sys.exit(1)
+          print('All target packages meet or exceed required minimum security thresholds.')
+          "
+
       - name: Run Trivy vulnerability scan on backend image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

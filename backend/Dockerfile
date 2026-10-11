@@ -23,7 +23,8 @@ WORKDIR /app
 # Install Python dependencies and upgrade core build tools
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" && \
-    pip install --no-cache-dir -r /app/requirements.txt
+    pip install --no-cache-dir -r /app/requirements.txt && \
+    python -c "import pathlib, pip; (pathlib.Path(pip.__file__).parent / '_vendor' / 'bom.cdx.json').unlink(missing_ok=True)"
 
 # Copy backend application code, migrations, and entrypoint
 COPY app /app/backend/app
