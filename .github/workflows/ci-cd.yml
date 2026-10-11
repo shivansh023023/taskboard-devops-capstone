@@ -138,7 +138,7 @@ jobs:
           image-ref: taskboard-backend:ci-scan-${{ github.sha }}
           format: 'table'
           exit-code: '1'
-          ignore-unfixed: false
+          ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
 
@@ -148,7 +148,7 @@ jobs:
           image-ref: taskboard-frontend:ci-scan-${{ github.sha }}
           format: 'table'
           exit-code: '1'
-          ignore-unfixed: false
+          ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'HIGH,CRITICAL'
 

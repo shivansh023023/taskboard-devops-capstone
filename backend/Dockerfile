@@ -1,12 +1,18 @@
 # ==========================================
 # TaskBoard Backend — Production Dockerfile
 # ==========================================
-FROM python:3.13-slim
+FROM python:3.13-slim-bookworm
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
+
+# Refresh OS packages to apply distribution security patches
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create a non-root system user and group
 RUN groupadd -g 1000 appuser && \
@@ -14,9 +20,9 @@ RUN groupadd -g 1000 appuser && \
 
 WORKDIR /app
 
-# Install Python dependencies
+# Install Python dependencies and upgrade core build tools
 COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=78.1.1" && \
     pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy backend application code, migrations, and entrypoint
