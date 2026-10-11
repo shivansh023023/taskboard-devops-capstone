@@ -7,6 +7,9 @@
 # ------------------------------------------
 FROM node:22-alpine AS builder
 
+# Upgrade Alpine packages in builder stage
+RUN apk update && apk upgrade --no-cache
+
 WORKDIR /app
 
 # Copy dependency manifests for caching
@@ -25,6 +28,9 @@ RUN npm run build
 # Stage 2: Runtime Stage (Minimal Nginx)
 # ------------------------------------------
 FROM nginx:alpine
+
+# Upgrade Alpine OS packages to apply distribution security patches
+RUN apk update && apk upgrade --no-cache
 
 # Remove default Nginx welcome page
 RUN rm -rf /usr/share/nginx/html/*
