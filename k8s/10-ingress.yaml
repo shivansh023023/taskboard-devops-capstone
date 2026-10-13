@@ -12,11 +12,20 @@ metadata:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
 spec:
+  ingressClassName: nginx
   rules:
     - host: taskboard.local
       http:
         paths:
-          # Frontend Nginx service handles SPA client-side routes and reverse-proxies /api to backend
+          # Backend API endpoints (FastAPI routes are mounted with /api)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8000
+          # Frontend SPA client-side routes and static assets
           - path: /
             pathType: Prefix
             backend:

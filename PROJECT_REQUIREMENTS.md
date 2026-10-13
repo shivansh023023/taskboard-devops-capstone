@@ -126,3 +126,32 @@ Rules: A requirement is marked `DONE` only after concrete verification.
 | 16 | Local cluster status honestly reported | DONE | Reported offline Docker Desktop / Minikube daemon blocker; smallest setup path documented |
 | 17 | Comprehensive documentation created | DONE | Detailed [docs/DAY4-KUBERNETES-HELM.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY4-KUBERNETES-HELM.md) and updated README created |
 | 18 | Terraform/AWS boundary preserved | DONE | AWS/EKS requirements preserved for cloud phase; no mock infrastructure created |
+
+---
+
+## 6. Day 5: Ingress, HPA, Prometheus & Grafana — Acceptance Checklist
+
+| # | Acceptance Criterion | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| 1 | Ingress routes `/` to frontend service | DONE | `k8s/10-ingress.yaml` and Helm `ingress.yaml` map root prefix to `frontend:80` |
+| 2 | Ingress routes `/api` directly to backend service | DONE | Multi-path Ingress configured for `backend:8000` without stripping or double prefixing |
+| 3 | Nginx fallback reverse-proxy preserved | DONE | `frontend/nginx.conf` proxy to `http://backend:8000` remains active for port-forward fallback |
+| 4 | Ingress class configured for Minikube | DONE | `spec.ingressClassName: nginx` configured; Minikube addon instructions documented |
+| 5 | Backend CPU requests validated | DONE | Backend specifies `requests.cpu: 100m`, providing baseline for Metrics Server calculations |
+| 6 | HPA manifest created using `autoscaling/v2` | DONE | `k8s/11-backend-hpa.yaml` created with min 1, max 5, target 60% CPU utilization |
+| 7 | HPA template integrated into Helm chart | DONE | `helm/taskboard/templates/backend-hpa.yaml` created; toggleable via `backend.autoscaling.enabled` |
+| 8 | Deployment replicas decoupled when HPA is enabled | DONE | Helm `backend-deployment.yaml` omits static `replicas` when HPA is active to prevent fighting |
+| 9 | Multi-replica Alembic migration race condition fixed | DONE | PostgreSQL transactional advisory lock (`pg_advisory_xact_lock`) added to `backend/alembic/env.py` |
+| 10 | Metrics Server prerequisites documented | DONE | Documented Minikube addon enable command and CPU utilization relationship |
+| 11 | Controlled load testing method provided | DONE | Provided PowerShell parallel loop and in-cluster busybox load generator commands |
+| 12 | Prometheus scrapes FastAPI `/metrics` directly | DONE | Scrapes `backend.taskboard.svc.cluster.local:8000/metrics` and annotated Pods |
+| 13 | Grafana pre-provisioned with Prometheus DataSource | DONE | `k8s/monitoring/03-grafana-datasource.yaml` auto-configures Prometheus proxy datasource |
+| 14 | Grafana pre-provisioned with TaskBoard dashboard | DONE | `k8s/monitoring/04-grafana-dashboard.yaml` defines 6 panels (RPS, latency, errors, in-flight, CPU, RAM) |
+| 15 | Monitoring stack isolated in `monitoring` namespace | DONE | Native manifests in `k8s/monitoring/` isolate observability workloads with low resource limits |
+| 16 | Helm chart passes linting with Day 5 additions | DONE | `helm lint helm/taskboard` passed with 0 failed charts and 0 warnings |
+| 17 | Helm chart renders valid YAML with Ingress & HPA | DONE | `helm template` validated with `--set ingress.enabled=true --set backend.autoscaling.enabled=true` |
+| 18 | All Kubernetes & monitoring manifests parse cleanly | DONE | Python PyYAML successfully validated 18 files (23 documents) across `k8s/` and `k8s/monitoring/` |
+| 19 | Comprehensive Day 5 documentation created | DONE | Detailed [docs/DAY5-INGRESS-HPA-MONITORING.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY5-INGRESS-HPA-MONITORING.md) created |
+| 20 | Non-destructive database preservation documented | DONE | Uninstall instructions preserve PostgreSQL PVC; no destructive scripts introduced |
+| 21 | AWS / EKS boundary strictly maintained | DONE | AWS Terraform and EKS remain deferred for cloud phase; no mock cloud resources created |
+| 22 | Cluster runtime status honestly reported | BLOCKED | Host Docker engine is stopped; static checks pass, live scheduling documented |

@@ -10,6 +10,7 @@ TaskBoard is a realistic, SaaS-style project management application engineered a
 - **Day 2: Complete Dockerization (Completed)**: Full multi-container architecture using Docker Compose. Frontend (Nginx reverse proxy + React SPA), Backend (FastAPI non-root container with auto-migrations), and PostgreSQL (persistent Alpine container) connected via a dedicated bridge network.
 - **Day 3: CI/CD, Trivy Security & GHCR (Completed)**: Automated GitHub Actions pipeline (`.github/workflows/ci-cd.yml`) with PostgreSQL service container testing, Vite production build, Trivy container vulnerability scanning (HIGH/CRITICAL blocking policy), and automated image publishing to GitHub Container Registry (GHCR). Detailed guide: [docs/DAY3-CICD.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY3-CICD.md).
 - **Day 4: Kubernetes, Helm & Local Deployment (Completed)**: Full Kubernetes orchestration with 11 native manifests in `k8s/` and a modular Helm chart in `helm/taskboard/`. Features PostgreSQL StatefulSet with persistent storage, backend deployment with startup ordering initContainer, non-root security contexts, frontend Nginx proxy integration, and zero-error Helm linting/templating. Detailed guide: [docs/DAY4-KUBERNETES-HELM.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY4-KUBERNETES-HELM.md).
+- **Day 5: Ingress, Autoscaling & Monitoring (Completed)**: Multi-path Kubernetes Ingress (`taskboard.local`), Horizontal Pod Autoscaler (`autoscaling/v2`) targeting CPU utilization, PostgreSQL migration concurrency protection with transactional advisory locks, and modular Prometheus & Grafana observability stack with automated dashboard provisioning. Detailed guide: [docs/DAY5-INGRESS-HPA-MONITORING.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY5-INGRESS-HPA-MONITORING.md).
 
 ---
 
@@ -21,10 +22,11 @@ TaskBoard is a realistic, SaaS-style project management application engineered a
 | **Backend** | Python 3.13 Slim, FastAPI, Uvicorn, Pydantic v2, Prometheus Instrumentator |
 | **Database** | PostgreSQL 16 Alpine, SQLAlchemy 2.0, Alembic, psycopg 3 |
 | **Containerization** | Docker, Docker Compose, Multi-stage Dockerfiles, Bridge Networks |
-| **Orchestration** | Kubernetes (StatefulSets, Deployments, Services, ConfigMaps, Secrets, Ingress), Helm v3/v4 |
+| **Orchestration** | Kubernetes (StatefulSets, Deployments, Services, ConfigMaps, Secrets, Ingress, HPA v2), Helm v3/v4 |
+| **Observability** | Prometheus 2.54, Grafana 11.1, PromQL, Automated Dashboard Provisioning |
 | **Testing** | Pytest, FastAPI TestClient, HTTPX |
 | **CI/CD & Security** | GitHub Actions, Aqua Security Trivy, GitHub Container Registry (GHCR) |
-| **Cloud & Infra** | *(Preserved for AWS phase: Terraform, AWS VPC, AWS EKS, Grafana)* |
+| **Cloud & Infra** | *(Preserved for AWS phase: Terraform, AWS VPC, AWS EKS)* |
 
 ---
 
@@ -49,9 +51,10 @@ devops_project/
 │   ├── alembic.ini               # Alembic configuration
 │   └── requirements.txt          # Python dependencies
 ├── terraform/                    # AWS infrastructure as code (pending AWS account setup)
-├── helm/taskboard/               # (Day 4) Helm charts for Kubernetes deployment
-├── k8s/                          # (Day 4) Kubernetes manifests
-├── monitoring/                   # (Day 6) Prometheus & Grafana alerting & dashboards
+├── helm/taskboard/               # (Day 4/5) Helm charts for Kubernetes deployment (with HPA & Ingress)
+├── k8s/                          # (Day 4/5) Kubernetes manifests (including HPA and monitoring/)
+│   └── monitoring/               # (Day 5) Prometheus & Grafana native manifests
+├── monitoring/                   # (Day 5) Standalone Grafana dashboards & Prometheus config
 ├── troubleshooting/              # (Day 6) Debugging runbooks and incident scenarios
 ├── scripts/                      # Automation & setup scripts
 ├── .github/workflows/            # (Day 3) GitHub Actions CI/CD pipelines

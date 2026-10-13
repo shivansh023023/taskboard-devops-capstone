@@ -56,6 +56,11 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
+            if connection.dialect.name == "postgresql":
+                # Advisory lock serializes concurrent migrations across multi-replica backend pods.
+                # Lock is automatically released when the transaction commits or rolls back.
+                from sqlalchemy import text
+                connection.execute(text("SELECT pg_advisory_xact_lock(72142718)"))
             context.run_migrations()
 
 if context.is_offline_mode():

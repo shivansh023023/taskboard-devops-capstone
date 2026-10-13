@@ -11,6 +11,15 @@ global:
 backend:
   replicaCount: 1
 
+  # Horizontal Pod Autoscaler (HPA v2) configuration
+  autoscaling:
+    # Disabled by default for single-replica local development. Requires metrics-server.
+    # Enable with: --set backend.autoscaling.enabled=true
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 60
+
   image:
     repository: ghcr.io/shivansh023023/taskboard-devops-capstone-backend
     # Default to 'main' for rolling tracking; override with commit SHA for immutable releases:
@@ -141,8 +150,15 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
   host: taskboard.local
-  path: /
-  pathType: Prefix
+  paths:
+    - path: /api
+      pathType: Prefix
+      serviceName: backend
+      servicePort: 8000
+    - path: /
+      pathType: Prefix
+      serviceName: frontend
+      servicePort: 80
 
 # ------------------------------------------------------------------------------
 # Application Core Configuration (ConfigMap settings)
