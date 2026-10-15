@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskboard
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/name: taskboard
+    app.kubernetes.io/part-of: taskboard-capstone
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shivansh023023/taskboard-devops-capstone.git
+    targetRevision: main
+    path: helm/taskboard
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: backend.autoscaling.enabled
+          value: "true"
+        - name: backend.autoscaling.minReplicas
+          value: "2"
+        - name: frontend.replicaCount
+          value: "2"
+        - name: ingress.enabled
+          value: "true"
+        - name: postgresql.auth.existingSecret
+          value: "taskboard-secrets"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskboard
+  syncPolicy:
+    automated:
+      prune: false       # Safety constraint: prevent automated deletion of PVCs or stateful storage
+      selfHeal: true     # Automatically remediate manual drift back to Git state
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
