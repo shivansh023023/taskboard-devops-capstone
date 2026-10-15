@@ -1,0 +1,135 @@
+# ==============================================================================
+# TaskBoard Helm Chart — AWS EKS Production Values
+# ==============================================================================
+# Use this values file when deploying to Amazon EKS:
+#   helm upgrade --install taskboard ./helm/taskboard \
+#     --namespace taskboard --create-namespace \
+#     -f ./helm/taskboard/values-aws.yaml \
+#     --set postgresql.auth.existingSecret=taskboard-secrets
+
+global:
+  environment: "production"
+
+# Docker registry pull secret for GHCR private images
+imagePullSecrets:
+  - name: ghcr-auth
+
+# ------------------------------------------------------------------------------
+# Backend Service Configuration (FastAPI)
+# ------------------------------------------------------------------------------
+backend:
+  replicaCount: 2
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+
+  image:
+    repository: ghcr.io/shivansh023023/taskboard-devops-capstone-backend
+    tag: main # Override with immutable Git commit SHA in production deployment
+    pullPolicy: IfNotPresent
+
+  service:
+    name: backend
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ------------------------------------------------------------------------------
+# Frontend Web Application Configuration (React + Nginx)
+# ------------------------------------------------------------------------------
+frontend:
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/shivansh023023/taskboard-devops-capstone-frontend
+    tag: main # Override with immutable Git commit SHA in production deployment
+    pullPolicy: IfNotPresent
+
+  service:
+    name: frontend
+    type: ClusterIP
+    port: 80
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# ------------------------------------------------------------------------------
+# PostgreSQL Database Configuration
+# ------------------------------------------------------------------------------
+# In AWS, PostgreSQL can run as an internal StatefulSet backed by AWS EBS (gp3)
+# OR connect to an external managed Amazon RDS instance.
+postgresql:
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+
+  auth:
+    database: taskboard
+    username: taskboard
+    # Mandatory: provide password or reference pre-created AWS Secret
+    password: ""
+    existingSecret: "taskboard-secrets"
+
+  persistence:
+    enabled: true
+    size: 10Gi
+    # Requires AWS EBS CSI driver addon installed in EKS:
+    storageClass: "gp3"
+    accessMode: ReadWriteOnce
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# ------------------------------------------------------------------------------
+# Ingress Configuration for AWS (AWS Load Balancer Controller / ALB or NGINX)
+# ------------------------------------------------------------------------------
+ingress:
+  enabled: true
+  # For AWS ALB: use className "alb"
+  # For NGINX Ingress Controller behind AWS NLB: use className "nginx"
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+  host: "" # Leave empty for default ALB DNS, or set your custom domain e.g. taskboard.example.com
+  paths:
+    - path: /api
+      pathType: Prefix
+      serviceName: backend
+      servicePort: 8000
+    - path: /
+      pathType: Prefix
+      serviceName: frontend
+      servicePort: 80
+
+# ------------------------------------------------------------------------------
+# Application Core Configuration
+# ------------------------------------------------------------------------------
+config:
+  debug: "False"
+  projectName: "TaskBoard"
+  apiV1Str: "/api"
+  corsOrigins: '["*"]' # Lock down to your production domain(s)

@@ -5,6 +5,9 @@
 global:
   environment: "development"
 
+# Docker registry pull secrets for private images (e.g. GHCR)
+imagePullSecrets: []
+
 # ------------------------------------------------------------------------------
 # Backend Service Configuration (FastAPI)
 # ------------------------------------------------------------------------------

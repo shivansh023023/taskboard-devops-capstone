@@ -1,0 +1,44 @@
+# ==============================================================================
+# TaskBoard Terraform Infrastructure — Example Variables Template
+# Copy this file to terraform.tfvars and customize before running terraform plan
+# ==============================================================================
+
+aws_region   = "us-east-1"
+environment  = "dev"
+project_name = "taskboard"
+cluster_name = "taskboard-eks"
+
+# Kubernetes Version
+cluster_version = "1.35"
+
+# VPC & Networking
+vpc_cidr             = "10.0.0.0/16"
+availability_zones   = ["us-east-1a", "us-east-1b"]
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.10.0/24", "10.0.20.0/24"]
+
+# Cost Optimization: Use a single NAT Gateway in dev/test (~$32/month savings)
+# Set to false for multi-AZ production redundancy
+single_nat_gateway = true
+
+# EKS Managed Node Group
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 4
+node_disk_size      = 30
+
+# Control Plane Access Security
+# By default, public endpoint access is kept private-only unless explicit trusted CIDRs are provided.
+# Specify your administrator or VPN CIDR to enable restricted public access (never commit 0.0.0.0/0):
+cluster_endpoint_public_access       = true
+cluster_endpoint_private_access      = true
+cluster_endpoint_public_access_cidrs = []
+# Example: cluster_endpoint_public_access_cidrs = ["YOUR_TRUSTED_IP_OR_CIDR/32"]
+
+# Resource Tags
+tags = {
+  Owner       = "devops-capstone"
+  Environment = "dev"
+  CostCenter  = "engineering"
+}

@@ -154,4 +154,30 @@ Rules: A requirement is marked `DONE` only after concrete verification.
 | 19 | Comprehensive Day 5 documentation created | DONE | Detailed [docs/DAY5-INGRESS-HPA-MONITORING.md](file:///c:/Users/Shivansh/Desktop/devops_project/docs/DAY5-INGRESS-HPA-MONITORING.md) created |
 | 20 | Non-destructive database preservation documented | DONE | Uninstall instructions preserve PostgreSQL PVC; no destructive scripts introduced |
 | 21 | AWS / EKS boundary strictly maintained | DONE | AWS Terraform and EKS remain deferred for cloud phase; no mock cloud resources created |
-| 22 | Cluster runtime status honestly reported | BLOCKED | Host Docker engine is stopped; static checks pass, live scheduling documented |
+| 22 | Cluster runtime status honestly reported | DONE | Live cluster verified: Ingress, HPA, Prometheus, Grafana, and data persistence confirmed |
+
+---
+
+## 7. Day 6, Stage 1: Terraform & AWS EKS — Acceptance Checklist
+
+| # | Acceptance Criterion | Status | Verification Detail |
+| :--- | :--- | :--- | :--- |
+| 1 | Terraform version & provider constraints defined | DONE | `terraform/versions.tf` pins Terraform `>= 1.5.0`, AWS `~> 5.0`, TLS `~> 4.0` |
+| 2 | Dedicated VPC with public and private subnets | DONE | `terraform/vpc.tf` defines `10.0.0.0/16` VPC with 2 public & 2 private subnets across 2 AZs |
+| 3 | Configurable & cost-conscious NAT Gateway | DONE | Single NAT Gateway mode enabled by default (`single_nat_gateway = true`), saving ~$32/mo in dev |
+| 4 | Kubernetes Load Balancer subnet tags applied | DONE | `kubernetes.io/role/elb = 1` on public, `kubernetes.io/role/internal-elb = 1` on private subnets |
+| 5 | EKS cluster control plane configured | DONE | `terraform/eks.tf` configures Kubernetes v1.35 with audit/api logging enabled |
+| 6 | EKS Managed Node Group in private subnets | DONE | Nodes deployed in private subnets with `t3.medium` instances (min 1, desired 2, max 4) |
+| 7 | Least-privilege IAM roles and policies | DONE | Separate cluster and node IAM roles with least privilege; OIDC provider enabled for IRSA |
+| 8 | Security group isolation | DONE | `terraform/security_groups.tf` creates dedicated control plane & worker node security groups |
+| 9 | Comprehensive outputs defined | DONE | `terraform/outputs.tf` exposes cluster name, endpoint, VPC IDs, and copy-paste `update-kubeconfig` command |
+| 10 | Variables defined with types and validations | DONE | `terraform/variables.tf` parameterizes region, CIDRs, node sizing, and access controls |
+| 11 | Safe `terraform.tfvars.example` created | DONE | Placeholders only; zero committed credentials |
+| 12 | Sensitive Terraform files ignored in `.gitignore` | DONE | `.gitignore` updated with `.terraform/`, `*.tfstate*`, and `*.tfvars` ignore rules |
+| 13 | Terraform code formatted (`terraform fmt`) | DONE | `terraform fmt -check -recursive` exited with code 0 |
+| 14 | Terraform initialized offline (`terraform init`) | DONE | `terraform init -backend=false` installed AWS and TLS providers successfully |
+| 15 | Terraform code validated (`terraform validate`) | DONE | `terraform validate` returned `Success! The configuration is valid.` |
+| 16 | AWS-specific Helm values created | DONE | `helm/taskboard/values-aws.yaml` created with ALB ingress, gp3 storageClass, and scaled replicas |
+| 17 | Helm chart linted with AWS values | DONE | `helm lint` and `helm template` validated cleanly with `values-aws.yaml` |
+| 18 | Comprehensive Day 6 documentation created | DONE | Detailed `terraform/README.md` and `docs/DAY6-TERRAFORM-EKS.md` created |
+| 19 | Zero AWS resources provisioned (No cloud costs) | DONE | Verified no `terraform apply` executed; local offline boundary strictly preserved |
