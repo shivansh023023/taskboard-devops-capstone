@@ -29,18 +29,22 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.frontend.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.frontend.service.port }}
+              containerPort: {{ .Values.frontend.service.targetPort | default 8080 }}
               protocol: TCP
           livenessProbe:
             httpGet:
               path: {{ .Values.frontend.probes.liveness.path }}
-              port: {{ .Values.frontend.service.port }}
+              port: {{ .Values.frontend.service.targetPort | default 8080 }}
             initialDelaySeconds: {{ .Values.frontend.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.frontend.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.frontend.probes.liveness.timeoutSeconds }}
@@ -48,7 +52,7 @@ spec:
           readinessProbe:
             httpGet:
               path: {{ .Values.frontend.probes.readiness.path }}
-              port: {{ .Values.frontend.service.port }}
+              port: {{ .Values.frontend.service.targetPort | default 8080 }}
             initialDelaySeconds: {{ .Values.frontend.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.frontend.probes.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.frontend.probes.readiness.timeoutSeconds }}

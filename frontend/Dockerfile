@@ -25,7 +25,7 @@ COPY . .
 RUN npm run build
 
 # ------------------------------------------
-# Stage 2: Runtime Stage (Minimal Nginx)
+# Stage 2: Runtime Stage (Minimal Nginx Non-Root)
 # ------------------------------------------
 FROM nginx:alpine
 
@@ -41,8 +41,24 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom Nginx configuration with reverse proxy and SPA routing
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose HTTP port 80
-EXPOSE 80
+# Configure Nginx for unprivileged non-root execution:
+# 1. Update PID file location to /tmp/nginx.pid in main Nginx configuration
+# 2. Remove root-only "user nginx;" directive from main config to prevent startup warnings
+# 3. Ensure all runtime directories (webroot, cache, log, conf.d, tmp) are owned by user nginx (UID 101)
+RUN sed -i -E 's|pid\s+/[^;]+;|pid /tmp/nginx.pid;|g' /etc/nginx/nginx.conf && \
+    sed -i '/user  nginx;/d' /etc/nginx/nginx.conf && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /tmp/nginx.pid && \
+    chown nginx:nginx /tmp/nginx.pid
+
+# Switch to unprivileged non-root user (UID 101)
+USER nginx
+
+# Expose unprivileged HTTP port 8080
+EXPOSE 8080
 
 # Start Nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]

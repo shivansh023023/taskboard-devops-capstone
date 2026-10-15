@@ -11,7 +11,7 @@ spec:
   ports:
     - name: http
       port: {{ .Values.frontend.service.port }}
-      targetPort: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.service.targetPort | default .Values.frontend.service.port }}
       protocol: TCP
   selector:
     app.kubernetes.io/name: {{ include "taskboard.name" . }}-frontend

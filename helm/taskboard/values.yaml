@@ -81,6 +81,7 @@ frontend:
     name: frontend
     type: ClusterIP
     port: 80
+    targetPort: 8080
 
   resources:
     requests:
@@ -103,6 +104,12 @@ frontend:
       periodSeconds: 5
       timeoutSeconds: 5
       failureThreshold: 3
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    fsGroup: 101
 
 # ------------------------------------------------------------------------------
 # PostgreSQL Database Configuration (Local StatefulSet)

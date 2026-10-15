@@ -25,6 +25,11 @@ spec:
         app.kubernetes.io/component: web
         app.kubernetes.io/part-of: taskboard-capstone
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
       containers:
         - name: frontend
           # Release-pinned immutable tag: ghcr.io/shivansh023023/taskboard-devops-capstone-frontend:f444898ae2c35c922bc0abedbe14360d97af9652
@@ -32,13 +37,13 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           # Security: Frontend only needs web port, NO database credentials or secrets are mounted
           livenessProbe:
             httpGet:
               path: /nginx-health
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -46,7 +51,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /nginx-health
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 5
