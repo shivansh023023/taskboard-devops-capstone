@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
 
 # Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -17,31 +18,36 @@ from backend.app.db.session import get_db
 from backend.app.main import app
 from backend.app.models.task import Task
 
-# Engine connected to test/dev PostgreSQL database
-engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True)
+# Use isolated in-memory SQLite for tests to protect live database records
+TEST_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_database():
-    """Ensure database schema is created prior to running test suite."""
+    """Ensure database schema is created in isolated test database."""
+    from backend.app.db import session as db_session_module
     Base.metadata.create_all(bind=engine)
+    orig_engine = db_session_module.engine
+    db_session_module.engine = engine
     yield
-    # Cleanup after test suite
-    with engine.connect() as conn:
-        conn.execute(Task.__table__.delete())
-        conn.commit()
+    db_session_module.engine = orig_engine
+    Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="function")
 def db_session() -> Generator[Session, None, None]:
-    """Provide a clean database session per test with automatic teardown."""
+    """Provide a clean isolated test database session per test with automatic teardown."""
     db = TestingSessionLocal()
-    # Clean tasks table before each test
-    db.query(Task).delete()
-    db.commit()
     try:
         yield db
     finally:
-        db.query(Task).delete()
+        db.rollback()
+        for table in reversed(Base.metadata.sorted_tables):
+            db.execute(table.delete())
         db.commit()
         db.close()
 

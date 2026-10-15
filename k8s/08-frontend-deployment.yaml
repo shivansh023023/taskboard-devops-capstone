@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: web
     app.kubernetes.io/part-of: taskboard-capstone
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: frontend

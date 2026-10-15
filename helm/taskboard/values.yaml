@@ -12,14 +12,14 @@ imagePullSecrets: []
 # Backend Service Configuration (FastAPI)
 # ------------------------------------------------------------------------------
 backend:
-  replicaCount: 1
+  replicaCount: 2
 
   # Horizontal Pod Autoscaler (HPA v2) configuration
   autoscaling:
     # Disabled by default for single-replica local development. Requires metrics-server.
     # Enable with: --set backend.autoscaling.enabled=true
     enabled: false
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 5
     targetCPUUtilizationPercentage: 60
 
@@ -68,7 +68,7 @@ backend:
 # Frontend Web Application Configuration (React + Nginx)
 # ------------------------------------------------------------------------------
 frontend:
-  replicaCount: 1
+  replicaCount: 2
 
   image:
     repository: ghcr.io/shivansh023023/taskboard-devops-capstone-frontend
